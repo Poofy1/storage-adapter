@@ -65,6 +65,13 @@ def read_csv(path):
 def save_data(data, path):
     storage = StorageClient.get_instance()
     
+    # Convert PIL Image to numpy array if needed
+    if isinstance(data, Image.Image):
+        data = np.array(data)
+        # Convert RGB to BGR for OpenCV
+        if len(data.shape) == 3 and data.shape[2] == 3:  # Check if it's a color image
+            data = cv2.cvtColor(data, cv2.COLOR_RGB2BGR)
+        
     if storage.is_gcp:
         blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
         
