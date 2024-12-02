@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "storage-adapter"
+version = "0.1.0"
+description = "Utilities for handling storage operations in GCP and local environments"
+authors = [
+    {name = "poofy38", email = "poofy38@gmail.com"},
+]
+dependencies = [
+    "google-cloud-storage",
+    "opencv-python",
+    "numpy",
+    "pandas"
+]
