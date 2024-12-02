@@ -15,6 +15,7 @@ class StorageClient:
     def __init__(self, windir=None, bucket_name=None):
         self.is_gcp = bucket_name is not None
         self.windir = windir if windir else ""
+        print(f"Storage mode: {'GCP' if self.is_gcp else 'Windows'}")  # Added print
         if self.is_gcp:
             self._client = storage.Client()
             self._bucket = self._client.bucket(bucket_name)

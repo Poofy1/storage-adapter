@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "storage-adapter"
-version = "0.1.4"
+version = "0.1.5"
 description = "Utilities for handling storage operations in GCP and local environments"
 authors = [
     {name = "poofy38", email = "poofy38@gmail.com"},
