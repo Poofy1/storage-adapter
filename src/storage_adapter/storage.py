@@ -6,6 +6,7 @@ import pandas as pd
 import os
 from PIL import Image
 from threading import Lock
+from io import BytesIO
 
 class StorageClient:
     _instance = None
