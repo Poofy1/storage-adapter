@@ -13,5 +13,6 @@ dependencies = [
     "google-cloud-storage",
     "opencv-python",
     "numpy",
-    "pandas"
+    "pandas",
+    "Pillow"
 ]

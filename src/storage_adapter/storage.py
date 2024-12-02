@@ -4,7 +4,7 @@ import numpy as np
 import io
 import pandas as pd
 import os
-import json
+from PIL import Image
 from threading import Lock
 
 class StorageClient:
@@ -26,20 +26,29 @@ class StorageClient:
                     cls._instance = cls(windir, bucket_name)
         return cls._instance
 
-def read_image(path):
+def read_image(path, use_pil=False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp:
-        try:
+    try:
+        if storage.is_gcp:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
-            nparr = np.frombuffer(blob.download_as_bytes(), np.uint8)
-            return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        except Exception as e:
-            print(f"Error reading image {path}: {str(e)}")
-            return None
-    else:
-        full_path = os.path.join(storage.windir, path)
-        return cv2.imread(full_path)
+            bytes_data = blob.download_as_bytes()
+            
+            if use_pil:
+                return Image.open(BytesIO(bytes_data))
+            else:
+                nparr = np.frombuffer(bytes_data, np.uint8)
+                return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        else:
+            full_path = os.path.join(storage.windir, path)
+            if use_pil:
+                return Image.open(full_path)
+            else:
+                return cv2.imread(full_path)
+                
+    except Exception as e:
+        print(f"Error reading image {path}: {str(e)}")
+        return None
 
 def read_csv(path):
     storage = StorageClient.get_instance()
