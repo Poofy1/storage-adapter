@@ -7,6 +7,7 @@ import os
 from PIL import Image
 from threading import Lock
 from io import BytesIO
+import time
 
 class StorageClient:
     _instance = None
@@ -29,13 +30,23 @@ class StorageClient:
                     cls._instance = cls(windir, bucket_name)
         return cls._instance
 
-def read_image(path, use_pil=False):
+def read_image(path, use_pil=False, max_retries=3):
     storage = StorageClient.get_instance()
     
     try:
         if storage.is_gcp:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
-            bytes_data = blob.download_as_bytes()
+            
+            for attempt in range(max_retries):
+                try:
+                    bytes_data = blob.download_as_bytes()
+                    break
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        print(f"Failed to download from GCP after {max_retries} attempts: {str(e)}")
+                        return None
+                    print(f"Download attempt {attempt + 1} failed, retrying...")
+                    time.sleep(1 * (attempt + 1))
             
             if use_pil:
                 return Image.open(BytesIO(bytes_data))
