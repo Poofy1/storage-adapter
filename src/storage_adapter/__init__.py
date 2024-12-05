@@ -7,6 +7,7 @@ from .storage import (
     make_dirs,
     read_binary,
     delete_file,
+    rename_file,
     get_files_by_extension,
     read_txt
 )
@@ -22,5 +23,6 @@ __all__ = [
     'get_files_by_extension',
     'read_txt',
     'delete_file',
+    'rename_file',
     'make_dirs'
 ]

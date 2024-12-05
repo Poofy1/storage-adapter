@@ -183,7 +183,31 @@ def read_binary(path):
         except Exception as e:
             print(f"Error reading binary file {path}: {str(e)}")
             return None
-        
+
+def rename_file(old_path, new_path):
+    storage = StorageClient.get_instance()
+    
+    if storage.is_gcp:
+        try:
+            source_blob = storage._bucket.blob(old_path.replace('//', '/').rstrip('/'))
+            dest_blob = storage._bucket.blob(new_path.replace('//', '/').rstrip('/'))
+            
+            # Copy source to destination
+            storage._bucket.copy_blob(source_blob, storage._bucket, dest_blob.name)
+            # Delete the source
+            source_blob.delete()
+        except exceptions.NotFound:
+            print(f"Source file not found: {old_path}")
+        except Exception as e:
+            print(f"Error renaming file from {old_path} to {new_path}: {str(e)}")
+    else:
+        try:
+            old_full_path = os.path.join(storage.windir, old_path)
+            new_full_path = os.path.join(storage.windir, new_path)
+            os.rename(old_full_path, new_full_path)
+        except Exception as e:
+            print(f"Error renaming file from {old_path} to {new_path}: {str(e)}")
+                  
 def file_exists(path):
     storage = StorageClient.get_instance()
     
