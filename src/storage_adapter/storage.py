@@ -194,7 +194,24 @@ def file_exists(path):
         full_path = os.path.join(storage.windir, path)
         return os.path.exists(full_path)
     
+def delete_file(path):
+    storage = StorageClient.get_instance()
     
+    if storage.is_gcp:
+        try:
+            blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
+            blob.delete()
+        except exceptions.NotFound:
+            print(f"File not found to delete: {path}")
+        except Exception as e:
+            print(f"Error deleting file {path}: {str(e)}")
+    else:
+        try:
+            full_path = os.path.join(storage.windir, path)
+            if os.path.exists(full_path):
+                os.remove(full_path)
+        except Exception as e:
+            print(f"Error deleting file {path}: {str(e)}")
     
 def make_dirs(path):
     storage = StorageClient.get_instance()
