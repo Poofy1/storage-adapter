@@ -14,5 +14,8 @@ __all__ = [
     'read_csv',
     'save_data',
     'file_exists',
+    'read_binary',
+    'get_files_by_extension',
+    'read_txt',
     'make_dirs'
 ]
