@@ -8,6 +8,7 @@ from PIL import Image
 from threading import Lock
 from io import BytesIO
 import time
+from google.api_core import exceptions
 
 class StorageClient:
     _instance = None
@@ -64,16 +65,69 @@ def read_image(path, use_pil=False, max_retries=3):
         print(f"Error reading image {path}: {str(e)}")
         return None
 
+def read_txt(path):
+    storage = StorageClient.get_instance()
+    
+    if storage.is_gcp:
+        try:
+            blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
+            content = blob.download_as_string()
+            # Decode bytes to string if content is in bytes
+            if isinstance(content, bytes):
+                return content.decode('utf-8')
+            return content
+        except exceptions.NotFound:
+            print(f"File not found: {path}")
+            return None
+    else:
+        try:
+            full_path = os.path.join(storage.windir, path)
+            with open(full_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        except FileNotFoundError:
+            print(f"File not found: {path}")
+            return None
+        except Exception as e:
+            print(f"Error reading text file {path}: {str(e)}")
+            return None
+
+
 def read_csv(path):
     storage = StorageClient.get_instance()
     
     if storage.is_gcp:
-        blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
-        content = blob.download_as_string()
-        return pd.read_csv(io.BytesIO(content))
+        try:
+            blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
+            content = blob.download_as_string()
+            return pd.read_csv(io.BytesIO(content))
+        except exceptions.NotFound:
+            print(f"File not found: {path}")
+            raise None
     else:
         full_path = os.path.join(storage.windir, path)
         return pd.read_csv(full_path)
+
+
+def get_files_by_extension(directory, extension):
+    storage = StorageClient.get_instance()
+    file_paths = []
+
+    if storage.is_gcp:
+        # List all blobs in the directory and filter by extension
+        prefix = directory.replace('\\', '/').rstrip('/') + '/'
+        blobs = storage._bucket.list_blobs(prefix=prefix)
+        
+        for blob in blobs:
+            if blob.name.endswith(extension):
+                file_paths.append(blob.name)
+    else:
+        # Use os.walk for local filesystem
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if file.endswith(extension):
+                    file_paths.append(os.path.join(root, file))
+
+    return file_paths
 
 def save_data(data, path):
     storage = StorageClient.get_instance()
@@ -108,6 +162,28 @@ def save_data(data, path):
             with open(full_path, 'w') as f:
                 f.write(str(data))
 
+def read_binary(path):
+    storage = StorageClient.get_instance()
+    
+    if storage.is_gcp:
+        try:
+            blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
+            return blob.download_as_bytes()
+        except exceptions.NotFound:
+            print(f"File not found: {path}")
+            return None
+        except Exception as e:
+            print(f"Error reading binary file {path}: {str(e)}")
+            return None
+    else:
+        try:
+            full_path = os.path.join(storage.windir, path)
+            with open(full_path, 'rb') as f:
+                return f.read()
+        except Exception as e:
+            print(f"Error reading binary file {path}: {str(e)}")
+            return None
+        
 def file_exists(path):
     storage = StorageClient.get_instance()
     
