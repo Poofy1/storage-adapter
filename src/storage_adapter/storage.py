@@ -236,6 +236,25 @@ def delete_file(path):
                 os.remove(full_path)
         except Exception as e:
             print(f"Error deleting file {path}: {str(e)}")
+
+def list_files(folder_path, extension=None):
+    storage = StorageClient.get_instance()
+    
+    if storage.is_gcp:
+        # Normalize path and ensure it ends with /
+        prefix = folder_path.replace('//', '/').rstrip('/') + '/'
+        blobs = storage._bucket.list_blobs(prefix=prefix)
+        
+        if extension:
+            return [blob.name for blob in blobs if blob.name.endswith(extension)]
+        return [blob.name for blob in blobs]
+    else:
+        full_path = os.path.join(storage.windir, folder_path)
+        files = os.listdir(full_path)
+        
+        if extension:
+            return [os.path.join(full_path, f) for f in files if f.endswith(extension)]
+        return [os.path.join(full_path, f) for f in files]
     
 def make_dirs(path):
     storage = StorageClient.get_instance()
