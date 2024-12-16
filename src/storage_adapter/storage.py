@@ -13,23 +13,19 @@ from google.api_core import exceptions
 class StorageClient:
     _instance = None
     _lock = Lock()
-    _initialized = False
     
     def __init__(self, windir=None, bucket_name=None):
-        with StorageClient._lock:  # Add lock around initialization check
-            # Consider empty string bucket_name as None
-            self.is_gcp = bucket_name is not None and bucket_name != ""
-            self.windir = windir if windir else ""
+        # Consider empty string bucket_name as None
+        self.is_gcp = bucket_name is not None and bucket_name != ""
+        self.windir = windir if windir else ""
+        # This will only print during actual initialization
+        if not hasattr(StorageClient, '_initialized'):
+            print(f"Storage mode: {'GCP' if self.is_gcp else 'Windows'}")
+            StorageClient._initialized = True
+        if self.is_gcp:
+            self._client = storage.Client()
+            self._bucket = self._client.bucket(bucket_name)
             
-            # Only print during first initialization
-            if not StorageClient._initialized:
-                print(f"Storage mode: {'GCP' if self.is_gcp else 'Windows'}")
-                StorageClient._initialized = True
-                
-            if self.is_gcp:
-                self._client = storage.Client()
-                self._bucket = self._client.bucket(bucket_name)
-    
     @classmethod
     def get_instance(cls, windir=None, bucket_name=None):
         if cls._instance is None:
