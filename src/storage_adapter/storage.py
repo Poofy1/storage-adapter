@@ -38,7 +38,7 @@ def read_image(path, use_pil=False, max_retries=3, local_override = False):
     storage = StorageClient.get_instance()
     
     try:
-        if storage.is_gcp or local_override:
+        if storage.is_gcp and not local_override:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
             
             for attempt in range(max_retries):
@@ -71,7 +71,7 @@ def read_image(path, use_pil=False, max_retries=3, local_override = False):
 def read_txt(path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp or local_override:
+    if storage.is_gcp and not local_override:
         try:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
             content = blob.download_as_string()
@@ -98,7 +98,7 @@ def read_txt(path, local_override = False):
 def read_csv(path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp or local_override:
+    if storage.is_gcp and not local_override:
         try:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
             content = blob.download_as_string()
@@ -115,7 +115,7 @@ def get_files_by_extension(directory, extension, local_override = False):
     storage = StorageClient.get_instance()
     file_paths = []
 
-    if storage.is_gcp or local_override:
+    if storage.is_gcp and not local_override:
         # List all blobs in the directory and filter by extension
         prefix = directory.replace('\\', '/').rstrip('/') + '/'
         blobs = storage._bucket.list_blobs(prefix=prefix)
@@ -168,7 +168,7 @@ def save_data(data, path, local_override = False):
 def read_binary(path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp or local_override:
+    if storage.is_gcp and not local_override:
         try:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
             return blob.download_as_bytes()
@@ -190,7 +190,7 @@ def read_binary(path, local_override = False):
 def rename_file(old_path, new_path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp or local_override:
+    if storage.is_gcp and not local_override:
         try:
             source_blob = storage._bucket.blob(old_path.replace('//', '/').rstrip('/'))
             dest_blob = storage._bucket.blob(new_path.replace('//', '/').rstrip('/'))
@@ -214,7 +214,7 @@ def rename_file(old_path, new_path, local_override = False):
 def file_exists(path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp or local_override:
+    if storage.is_gcp and not local_override:
         blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
         return blob.exists()
     else:
@@ -224,7 +224,7 @@ def file_exists(path, local_override = False):
 def delete_file(path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp or local_override:
+    if storage.is_gcp and not local_override:
         try:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
             blob.delete()
@@ -243,7 +243,7 @@ def delete_file(path, local_override = False):
 def list_files(folder_path, extension=None, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp or local_override:
+    if storage.is_gcp and not local_override:
         # Normalize path and ensure it ends with /
         prefix = folder_path.replace('//', '/').rstrip('/') + '/'
         blobs = storage._bucket.list_blobs(prefix=prefix)
