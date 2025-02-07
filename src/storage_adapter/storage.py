@@ -34,11 +34,11 @@ class StorageClient:
                     cls._instance = cls(windir, bucket_name)
         return cls._instance
 
-def read_image(path, use_pil=False, max_retries=3):
+def read_image(path, use_pil=False, max_retries=3, local_override = False):
     storage = StorageClient.get_instance()
     
     try:
-        if storage.is_gcp:
+        if storage.is_gcp or local_override:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
             
             for attempt in range(max_retries):
@@ -68,10 +68,10 @@ def read_image(path, use_pil=False, max_retries=3):
         print(f"Error reading image {path}: {str(e)}")
         return None
 
-def read_txt(path):
+def read_txt(path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp:
+    if storage.is_gcp or local_override:
         try:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
             content = blob.download_as_string()
@@ -95,10 +95,10 @@ def read_txt(path):
             return None
 
 
-def read_csv(path):
+def read_csv(path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp:
+    if storage.is_gcp or local_override:
         try:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
             content = blob.download_as_string()
@@ -111,11 +111,11 @@ def read_csv(path):
         return pd.read_csv(full_path)
 
 
-def get_files_by_extension(directory, extension):
+def get_files_by_extension(directory, extension, local_override = False):
     storage = StorageClient.get_instance()
     file_paths = []
 
-    if storage.is_gcp:
+    if storage.is_gcp or local_override:
         # List all blobs in the directory and filter by extension
         prefix = directory.replace('\\', '/').rstrip('/') + '/'
         blobs = storage._bucket.list_blobs(prefix=prefix)
@@ -132,7 +132,7 @@ def get_files_by_extension(directory, extension):
 
     return file_paths
 
-def save_data(data, path):
+def save_data(data, path, local_override = False):
     storage = StorageClient.get_instance()
     
     # Convert PIL Image to numpy array if needed
@@ -142,7 +142,7 @@ def save_data(data, path):
         if len(data.shape) == 3 and data.shape[2] == 3:  # Check if it's a color image
             data = cv2.cvtColor(data, cv2.COLOR_RGB2BGR)
         
-    if storage.is_gcp:
+    if storage.is_gcp or local_override:
         blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
         
         if isinstance(data, np.ndarray):
@@ -165,10 +165,10 @@ def save_data(data, path):
             with open(full_path, 'w') as f:
                 f.write(str(data))
 
-def read_binary(path):
+def read_binary(path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp:
+    if storage.is_gcp or local_override:
         try:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
             return blob.download_as_bytes()
@@ -187,10 +187,10 @@ def read_binary(path):
             print(f"Error reading binary file {path}: {str(e)}")
             return None
 
-def rename_file(old_path, new_path):
+def rename_file(old_path, new_path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp:
+    if storage.is_gcp or local_override:
         try:
             source_blob = storage._bucket.blob(old_path.replace('//', '/').rstrip('/'))
             dest_blob = storage._bucket.blob(new_path.replace('//', '/').rstrip('/'))
@@ -211,20 +211,20 @@ def rename_file(old_path, new_path):
         except Exception as e:
             print(f"Error renaming file from {old_path} to {new_path}: {str(e)}")
                   
-def file_exists(path):
+def file_exists(path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp:
+    if storage.is_gcp or local_override:
         blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
         return blob.exists()
     else:
         full_path = os.path.join(storage.windir, path)
         return os.path.exists(full_path)
     
-def delete_file(path):
+def delete_file(path, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp:
+    if storage.is_gcp or local_override:
         try:
             blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
             blob.delete()
@@ -240,10 +240,10 @@ def delete_file(path):
         except Exception as e:
             print(f"Error deleting file {path}: {str(e)}")
 
-def list_files(folder_path, extension=None):
+def list_files(folder_path, extension=None, local_override = False):
     storage = StorageClient.get_instance()
     
-    if storage.is_gcp:
+    if storage.is_gcp or local_override:
         # Normalize path and ensure it ends with /
         prefix = folder_path.replace('//', '/').rstrip('/') + '/'
         blobs = storage._bucket.list_blobs(prefix=prefix)
@@ -259,10 +259,10 @@ def list_files(folder_path, extension=None):
             return [os.path.join(full_path, f) for f in files if f.endswith(extension)]
         return [os.path.join(full_path, f) for f in files]
     
-def make_dirs(path):
+def make_dirs(path, local_override = False):
     storage = StorageClient.get_instance()
     
     # Only create directories for local storage
-    if not storage.is_gcp:
+    if not storage.is_gcp or local_override:
         full_path = os.path.join(storage.windir, path)
         os.makedirs(full_path, exist_ok=True)
