@@ -132,29 +132,41 @@ def get_files_by_extension(directory, extension, local_override = False):
 
     return file_paths
 
-def save_data(data, path, local_override = False):
+def save_data(data, path, local_override=False, max_retries=5):
     storage = StorageClient.get_instance()
     
     # Convert PIL Image to numpy array if needed
     if isinstance(data, Image.Image):
         data = np.array(data)
-        # Convert RGB to BGR for OpenCV
-        if len(data.shape) == 3 and data.shape[2] == 3:  # Check if it's a color image
+        if len(data.shape) == 3 and data.shape[2] == 3:
             data = cv2.cvtColor(data, cv2.COLOR_RGB2BGR)
         
-    if storage.is_gcp or local_override:
+    if storage.is_gcp and not local_override:
         blob = storage._bucket.blob(path.replace('//', '/').rstrip('/'))
         
-        if isinstance(data, np.ndarray):
-            _, encoded = cv2.imencode('.png', data)
-            blob.upload_from_string(encoded.tobytes())
-        elif isinstance(data, (pd.DataFrame, pd.Series)):
-            buffer = io.StringIO()
-            data.to_csv(buffer, index=False)
-            blob.upload_from_string(buffer.getvalue())
-        else:
-            blob.upload_from_string(str(data))
+        # Retry logic for GCP uploads
+        for attempt in range(max_retries):
+            try:
+                if isinstance(data, np.ndarray):
+                    _, encoded = cv2.imencode('.png', data)
+                    blob.upload_from_string(encoded.tobytes())
+                elif isinstance(data, (pd.DataFrame, pd.Series)):
+                    buffer = io.StringIO()
+                    data.to_csv(buffer, index=False)
+                    blob.upload_from_string(buffer.getvalue())
+                else:
+                    blob.upload_from_string(str(data))
+                break  # Success, exit retry loop
+                
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    print(f"Failed to upload {path} after {max_retries} attempts: {e}")
+                    raise e
+                
+                wait_time = 2 ** attempt  # Simple exponential backoff: 1s, 2s, 4s, 8s, 16s
+                time.sleep(wait_time)
     else:
+        # Local storage path (no retries needed)
         full_path = os.path.join(storage.windir, path)
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
         if isinstance(data, np.ndarray):
